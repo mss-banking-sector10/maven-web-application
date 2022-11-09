@@ -1,28 +1,21 @@
 node{
- 
- echo "build number: ${env.BUILD_NUMBER}"
- //echo "Job name is: ${env.JOB_NAME}"
- echo "Node name is: ${env.NODE_NAME}"
-    
+
 def mavenHome = tool name: "maven3.8.6"
 
-properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])
-
-stage('checkoutcode'){
+try{
+stage('Checkoutcode'){
 git branch: 'development', url: 'https://github.com/mss-banking-sector10/maven-web-application.git'
 }
 
-stage('build'){
+stage('Build'){
 sh "${mavenHome}/bin/mvn clean package"
 }
-/*
-stage('ExecuteSonarQubeReport'){
-sh "${mavenHome}/bin/mvn sonar:sonar"
+}
 
+catch(e){
+currentBuild.result = 'FAILURE'
 }
-stage('UploadArtifactintoNexus'){
-sshagent(['32c8350e-25b6-4b65-956c-84ce974c3446']) {
- sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@172.31.43.218:/opt/apache-tomcat-9.0.68/webapps/"
+finally{
+sendslacknotification(currentBuild.result
 }
-}*/
-}//node closing
+}
